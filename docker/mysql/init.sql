@@ -1,156 +1,111 @@
--- mysqlの認証方式を、8.0以前のものに変更
-ALTER USER 'root'@'%' IDENTIFIED WITH mysql_native_password BY 'root';
-ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'root';
+-- -- mysqlの認証方式を、8.0以前のものに変更
+-- ALTER USER 'root'@'%' IDENTIFIED WITH mysql_native_password BY 'root';
+-- ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'root';
+
+-- ローカル環境→ローカル環境コンテナ内のmysqlにログインしようとする際、外部ネットワークからのログインとみなされてしまいログインできない
+-- 上記の事象を避けるため、外部ネットワークのユーザーにも'k-portal' データベースの全ての権限を付与する
+GRANT ALL PRIVILEGES ON `k-portal`.* TO 'root'@'%';
+GRANT ALL PRIVILEGES ON `k-portal`.* TO 'user'@'%';
+-- 権限の変更を即座に反映させる
+FLUSH PRIVILEGES;
 
 -- テーブル作成＆初期データ投入
--- usersテーブル
-CREATE TABLE users (
-    id INT AUTO_INCREMENT PRIMARY KEY,            -- 主キー、オートインクリメント
-    name VARCHAR(20) NOT NULL,                 -- ユーザー名（20文字以内、NULL不可）
-    email VARCHAR(255) NOT NULL UNIQUE,            -- メールアドレス（ユニーク、NULL不可）
-    password VARCHAR(255) NOT NULL,                -- パスワード（NULL不可）
-    age INT CHECK (age >= 0),                     -- 年齢（18歳以上、MySQL 8.0以降）
-    deleted_flag TINYINT(1) DEFAULT 0,              -- 削除フラグ（0:削除されていない、1:削除されている、デフォルトは0）
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- 作成日時（デフォルトは現在のタイムスタンプ）
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, -- 更新日時（更新時に自動的に更新）
-    deleted_at TIMESTAMP NULL,                     -- 削除日時（NULLの場合は削除されていない）
-    CONSTRAINT email_format CHECK (email LIKE '%@%.%') -- メールアドレスの形式チェック（簡易的なチェック）
+-- membersテーブル
+CREATE TABLE members (
+  id INT NOT NULL AUTO_INCREMENT,                    -- 主キー。連番で自動採番
+  name VARCHAR(15) NOT NULL,                         -- メンバー名
+  birthday DATE NOT NULL,                            -- 誕生日（年は画面側で非表示にする想定）
+  image_path VARCHAR(255) NOT NULL,                  -- メンバー画像のパス
+  catch_copy VARCHAR(30) NOT NULL,                   -- キャッチコピー
+  description TEXT,                          -- メンバーの詳細説明（NULL許可）
+  color VARCHAR(7) NOT NULL,                   -- メンバーカラー（カラーコード）
+  accent_color VARCHAR(7) NOT NULL,                   -- メンバーカラーの色が濃くなったバージョン（カラーコード）
+  deleted_flag TINYINT(1) DEFAULT 0,                 -- 削除フラグ（0 = 未削除, 1 = 削除済）
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,             -- レコード作成日時
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, -- 更新日時
+  deleted_at DATETIME NULL,                          -- 論理削除した日時（NULL = 未削除）
+  PRIMARY KEY (id)                                   -- 主キー
 );
-
-INSERT INTO users (name, email, password, age)
+INSERT INTO members (name, birthday, image_path, catch_copy, description, color, accent_color)
 VALUES
-('kusogakiRoot', 'verykusogackie12345@gmail.com', 'nomorekusogaki', 25),
-('numasaka', 'numa4545@gmail.com', 'numany', 25),
-('ezaki', 'princeZeacky@zeus.chu', '0725', 25);
+('布河原 よしかず', '2020-07-07', '../images/members/nunogawara/card.png', '苦粗餓鬼の始祖', '当初は沼坂さんが描いた江崎の似顔絵に過ぎなかったが、謎の求心力によって「布河原よしかず」という別の存在と化した。まだまだ謎多き存在ではあるが、こいつが居なければ今の俺たちは存在しなかった、そう断言してもいいだろう。', '#3B82F6', '#1E40AF'),
+('江崎 貴博', '1999-07-25', '../images/members/ezaki/card.png', 'Battle Spirits', '超高級宿泊施設「天竺」のオーナー。困難に立ち向かう意志（Battle Spirits）を武器に、医者として数多の患者を救っている。あだ名をつけられすぎて、本当の自分を見失いそうになっている。', '#10B981', '#047857'),
+('沼坂 啜', '1999-08-17', '../images/members/numasaka/card.png', 'むりょうの生みの親', '昼はしごでき営業マン、そして夜は一之江のエンターテイナー。彼が生み出した流行語は数知れず、今日も自慢の体力で湯水のようにお金を使ってイクー。', '#F59E0B', '#D97706'),
+('徳永', '1999-08-28', '../images/members/tokugonagaru/card.png', 'デスヴォイス', '天下の名門、京都大学卒業（一浪一留）。イカした頭脳と痺れるデスヴォイスで、今日も数多の女性（通称：トクゴナgirl）を沼らせ中。飴と鞭の超絶テクは、時にメンバーにも及ぶ。', '#EC4899', '#BE185D'),
+('郷良', '1999-05-03', '../images/members/gora/card.png', '笑いのニューウェーブ', '2025年年始に突如参画したかと思えば、あれよあれよという間に大活躍した超新星。組織のローション、じゃなかった潤滑油として、苦粗餓鬼を新たな次元に導くのは彼かもしれない。', '#EF4444', '#DC2626');
 
--- placesテーブル
-CREATE TABLE places (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  place_type TINYINT(2) NOT NULL COMMENT '場所のジャンル（0:レース開催地, 1:トレーニングセンター, 2:その他）',
-  name VARCHAR(15) NOT NULL COMMENT '場所の名前',
-  address VARCHAR(255) NOT NULL COMMENT '場所の住所',
-  deleted_flag TINYINT(1) DEFAULT 0 COMMENT '削除フラグ',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '作成日時',
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新日時',
-  deleted_at TIMESTAMP NULL DEFAULT NULL COMMENT '削除日時'
+-- member_tagsテーブル
+CREATE TABLE member_tags (
+  id INT NOT NULL AUTO_INCREMENT,                    -- タグID（主キー。AUTO_INCREMENT）
+  member_id INT NOT NULL,                            -- タグの紐付き先となるメンバーID（members.id と外部キー連動）
+  name VARCHAR(30) NOT NULL,                         -- タグ名
+  deleted_flag TINYINT(1) DEFAULT 0,                 -- 削除フラグ（0 = 未削除）
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,             -- 作成日時
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, -- 更新日時
+  deleted_at DATETIME NULL,                          -- 削除日時（NULL = 未削除）
+  PRIMARY KEY (id),                      -- 主キー
+  INDEX idx_member (member_id),          -- インデックス（検索高速化）
+  CONSTRAINT fk_member_tags_member_id
+    FOREIGN KEY (member_id) REFERENCES members(id)   -- 外部キー制約
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
 );
-
-INSERT INTO places (place_type, name, address)
+INSERT INTO member_tags (member_id, name)
 VALUES
-(0, '二子玉川河川敷', ''),
-(0, '金沢城公園', ''),
-(0, '早明浦ダム', ''),
-(1, '用賀トレーニングセンター', ''),
-(1, '一之江トレーニングセンター', ''),
-(1, '西宮北口トレーニングセンター', ''),
-(1, '天竺トレーニングセンター', ''),
-(1, '明石トレーニングセンター', ''),
-(2, '安路都', ''),
-(2, '天竺', '');
+(1, 'よしかず（ガチ）'),
+(1, 'みんな知っててみんなよく知らない'),
+(2, 'よしかず'),
+(2, 'かっちゃん'),
+(2, 'ゼアキ皇子様'),
+(2, '姫路の田中圭'),
+(2, '蛭子能収の隠し子'),
+(2, '日赤王子'),
+(2, '生涯年収'),
+(2, '世宇子中'),
+(2, 'よしうん太'),
+(2, 'ザッキー杯参加者募集中'),
+(3, '沼坂さん'),
+(3, '営業成績一位'),
+(3, 'むりょう'),
+(3, 'お⚪︎⚪︎⚪︎'),
+(3, '乙尼慰'),
+(3, 'JK'),
+(3, 'チンチンカイカイ'),
+(3, '啜屋麺助'),
+(3, '吉原ラメント'),
+(4, 'トクゴナガル'),
+(4, 'デスヴォイス'),
+(4, '噯気（ゲップ）'),
+(4, 'メンズコーチ顔'),
+(4, 'やれっつってんだろ'),
+(4, '松葉崩し'),
+(4, '飴と鞭'),
+(4, '罪と罰'),
+(4, '縦型動画の才能ある'),
+(5, 'ゴゥラ'),
+(5, 'ゴリラ'),
+(5, '強羅温泉'),
+(5, '大久保が産んだ奇才'),
+(5, 'JA'),
+(5, '次男坊');
 
--- race_basic_informationsテーブル
-CREATE TABLE race_basic_informations (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  grade TINYINT(1) NOT NULL COMMENT 'レースのグレード（0:G1, 1:G2, 2:G3, 3:L, 4:O, 5:3勝, 6:2勝, 7:1勝, 8:未勝利, 9:新馬）',
-  name VARCHAR(30) NOT NULL COMMENT 'レース名',
-  place_id INT NOT NULL COMMENT '開催場所ID（placesテーブルの外部キー）',
-  race_number INT NOT NULL COMMENT '第何レースか',
-  track_type INT NOT NULL COMMENT 'トラックの種類（0:芝, 1:ダート, 2:障害, 3:アスファルト）',
-  distance INT NOT NULL COMMENT '距離（メートル）',
-  start_time VARCHAR(10) NOT NULL COMMENT '発走時刻（例: 15:40）',
-  deleted_flag TINYINT(1) DEFAULT 0 COMMENT '削除フラグ',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '作成日時',
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新日時',
-  deleted_at TIMESTAMP NULL DEFAULT NULL COMMENT '削除日時',
-  CONSTRAINT fk_place FOREIGN KEY (place_id) REFERENCES places(id)
+-- newsテーブル
+CREATE TABLE news (
+  id INT NOT NULL AUTO_INCREMENT,                    -- 主キー
+  title VARCHAR(30) NOT NULL,                        -- お知らせタイトル
+  category TINYINT(1) NOT NULL,                      -- カテゴリー（1:お知らせ, 2:イベント, 3:ニュース, 4:回答依頼）
+  date DATE NOT NULL,                                -- 投稿日
+  thumbnail_path VARCHAR(255),                       -- サムネイル画像のパス（1ニュース1画像想定）
+  detail TEXT,                                        -- お知らせ詳細文
+  deleted_flag TINYINT(1) DEFAULT 0,                 -- 削除フラグ（0 = 未削除）
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,             -- 作成日時
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, -- 更新日時
+  deleted_at DATETIME NULL,                          -- 削除日時（NULL = 未削除）
+  PRIMARY KEY (id)                                   -- 主キー
 );
-
-INSERT INTO race_basic_informations (grade, name, place_id, race_number, track_type, distance, start_time)
+INSERT INTO news (title, category, date, thumbnail_path, detail)
 VALUES
-(2, 'クソガキサマーダッシュ', 1, 12, 0, 50,'16:00'),
-(0, '野々市優駿', 2, 11, 0, 200,'15:30'),
-(2, '早明浦記念', 3, 1, 3, 150,'16:30'),
-(0, 'よしかずの宮杯', 1, 1, 0, 400,'16:00');
-
--- race_detailsテーブル
-CREATE TABLE race_details (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  race_basic_info_id INT NOT NULL COMMENT 'race_basic_informationsテーブルの外部キー',
-  date DATE NOT NULL COMMENT 'レース開催日',
-  climate TINYINT(1) NOT NULL COMMENT '天気（0:晴, 1:曇, 2:小雨, 3:雨, 4:小雪, 5:雪, 6:虹）',
-  track_condition TINYINT(1) NOT NULL COMMENT '馬場状態（0:良, 1:稍重, 2:重, 3:不良）',
-  winning_time FLOAT DEFAULT NULL COMMENT '1着馬のタイム（秒単位）',
-  deleted_flag TINYINT(1) DEFAULT 0 COMMENT '削除フラグ',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '作成日時',
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新日時',
-  deleted_at TIMESTAMP NULL DEFAULT NULL COMMENT '削除日時',
-  CONSTRAINT fk_race_basic_info FOREIGN KEY (race_basic_info_id) REFERENCES race_basic_informations(id)
-);
-
-INSERT INTO race_details (race_basic_info_id, date, climate, track_condition, winning_time)
-VALUES
-(1, '2021-07-25', 0, 0, 10.0),
-(2, '2021-09-20', 0, 0, 13.0),
-(3, '2021-10-10', 1, 0, 30.0),
-(4, '2025-05-25', 0, 0, null);
-
--- horsesテーブル
-CREATE TABLE horses (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(20) NOT NULL COMMENT '馬の名前',
-  birthday DATE COMMENT '馬の誕生日',
-  sex TINYINT(1) COMMENT '性別（0:牡, 1:牝, 2:セン馬）',
-  running_style TINYINT(1) COMMENT '脚質（0:逃げ, 1:先行, 2:差し, 3:追い込み, 4:自由自在）',
-  training_center_id INT COMMENT '所属トレセンID（training_centersテーブルの外部キー）',
-  retired_flag TINYINT(1) DEFAULT 0 COMMENT '引退フラグ（0:現役, 1:引退）',
-  deleted_flag TINYINT(1) DEFAULT 0 COMMENT '削除フラグ',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '作成日時',
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新日時',
-  deleted_at TIMESTAMP NULL DEFAULT NULL COMMENT '削除日時',
-  CONSTRAINT fk_training_center_id FOREIGN KEY (training_center_id) REFERENCES places(id)
-);
-
-INSERT INTO horses (name, birthday, sex, running_style, training_center_id)
-VALUES
-('Agostino Steffani', '1999/12/27', 0, 2, 4),
-('チンチンカイカイ', '1999/08/17', 0, 2, 5),
-('カルテスピリッツ', '1999/07/25', 0, 1, 7),
-('デスヴォイス', '1999/08/29', 0, 3, 6),
-('メッチャゴーラ', '1999/05/03', 0, 1, 8);
-
--- race_tesultsテーブル
-CREATE TABLE race_results (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  horse_id INT NOT NULL COMMENT 'horsesテーブルの外部キー（馬の情報）',
-  race_id INT NOT NULL COMMENT 'racesテーブルの外部キー（レースの情報）',
-  horse_number INT NOT NULL COMMENT '馬の、レースにおける馬番',
-  weight FLOAT NOT NULL COMMENT '馬の、そのレース時の体重',
-  popularity INT NOT NULL COMMENT '馬の、レースにおける人気順',
-  odds FLOAT NOT NULL COMMENT '馬の、レースにおける単勝オッズ',
-  finish_position INT DEFAULT NULL COMMENT '馬の、レースにおける着順',
-  finish_time FLOAT DEFAULT NULL COMMENT '馬が、そのレースでゴールするまでにかかった秒数',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '作成日時',
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新日時',
-  CONSTRAINT fk_horse FOREIGN KEY (horse_id) REFERENCES horses(id),
-  CONSTRAINT fk_race FOREIGN KEY (race_id) REFERENCES race_details(id)
-);
-
--- commentsテーブル
-CREATE TABLE comments (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    horse_id INT,
-    race_id INT,
-    comment TEXT NOT NULL,
-    deleted_flag TINYINT(1) DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (horse_id) REFERENCES horses(id),
-    FOREIGN KEY (race_id) REFERENCES race_details(id),
-    CHECK (
-        (horse_id IS NOT NULL AND race_id IS NULL) OR 
-        (horse_id IS NULL AND race_id IS NOT NULL)
-    )
-);
+('ローカル環境準備完了', 1, '2025-11-08', '../images/thumbnail/notification1.png', 'ローカル環境の準備が整いました！さあ、あなたも開発者になって、K-portalを盛り上げていきましょう！'),
+('クソガキグランプリ開催', 2, '2026-01-01', '../images/thumbnail/event1.png', '新年明けましておめでとうございます！今年も、何卒よろしくお願いいたします。...さて、早速ですが、クソガキグランプリの開催が決定したので、お知らせします。日時：2026年8月30日　場所：ららぽーと豊洲　内容：ピザの踊り食い　皆様のご参加お待ちしております。'),
+('沼坂さん活動休止', 3, '2026-03-01', '../images/thumbnail/news1.png', '沼坂さんが、年内で活動休止されるとのことです。今のうちに、遊んでおきましょう！'),
+('【アンケート】好きな手すり', 4, '2026-12-13', '../images/thumbnail/survey.png', 'この度、皆様の意識調査も兼ねて、好きな手すりをお伺いしたいと考えています。つきましては、以下の回答フォームからご回答お願いいたします。');

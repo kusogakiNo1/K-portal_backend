@@ -7,7 +7,7 @@ services:
     hostname: localhost
     ports:
       - "2206:22"
-      - "3306:3306"
+      - "3308:3306"
     environment:
       MYSQL_DATABASE: k-portal
       MYSQL_ROOT_PASSWORD: root
@@ -31,7 +31,7 @@ services:
     hostname: localhost
     ports:
       - "2207:22"
-      - "3307:3306"
+      - "3309:3306"
     environment:
       MYSQL_DATABASE: k-portal-test
       MYSQL_ROOT_PASSWORD: root
