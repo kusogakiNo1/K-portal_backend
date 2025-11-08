@@ -1,0 +1,4 @@
+node_modules/
+docker/mysql/data/
+docker/mysql-test/data/
+docs/

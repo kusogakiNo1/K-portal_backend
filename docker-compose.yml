@@ -1,0 +1,51 @@
+services:
+  k-portal-db:
+    # 生成するイメージ名
+    image: mysql:8.0
+    # 生成するコンテナ名
+    container_name: k-portal-db
+    hostname: localhost
+    ports:
+      - "2206:22"
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: k-portal
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: user
+      MYSQL_PASSWORD: kuso950
+      TZ: "Asia/Tokyo"
+    volumes:
+      - ./docker/mysql/my.cnf:/etc/mysql/conf.d/my.cnf
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./docker/mysql/data:/var/lib/mysql
+    privileged: true
+    networks:
+      - KPortalNetwork
+
+  # vitestテスト時接続用DBコンテナ
+  k-portal-db-test:
+    # 生成するイメージ名
+    image: mysql:8.0
+    # 生成するコンテナ名
+    container_name: k-portal-db-test
+    hostname: localhost
+    ports:
+      - "2207:22"
+      - "3307:3306"
+    environment:
+      MYSQL_DATABASE: k-portal-test
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: user
+      MYSQL_PASSWORD: kuso950
+      TZ: "Asia/Tokyo"
+    volumes:
+      - ./docker/mysql-test/my.cnf:/etc/mysql/conf.d/my.cnf
+      - ./docker/mysql-test/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./docker/mysql-test/data:/var/lib/mysql
+    privileged: true
+    networks:
+      - KPortalNetwork
+
+networks:
+  KPortalNetwork:
+    driver: bridge

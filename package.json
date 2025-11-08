@@ -1,0 +1,35 @@
+{
+  "name": "kusokeiba_backend",
+  "version": "1.0.0",
+  "main": "app.ts",
+  "scripts": {
+    "start": "npx --ignore-existing ts-node app.ts",
+    "dev": "ts-node-dev --respawn --transpile-only app.ts",
+    "test": "vitest",
+    "muryo": "echo Numasaka is comming here, So you can start eating ramen."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "mysql": "^2.18.1",
+    "reflect-metadata": "^0.2.2",
+    "typeorm": "^0.3.22"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.1",
+    "@types/node": "^22.14.1",
+    "supertest": "^7.1.1",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  }
+}
