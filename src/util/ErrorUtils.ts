@@ -35,3 +35,15 @@ export const createNotFoundMessage = (
     detail: detail,
   };
 };
+
+/**
+ * エラーメッセージを指定して、500エラーを投げる
+ * @param validationErrors
+ */
+export const throwInternalServerError = (detailMessage: string): void => {
+  throw new HttpError(
+    HttpStatus.INTERNAL_SERVER_ERROR.code,
+    HttpStatus.INTERNAL_SERVER_ERROR.message,
+    detailMessage
+  );
+};

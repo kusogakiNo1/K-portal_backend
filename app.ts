@@ -6,14 +6,9 @@ console.log("🐯 app.ts started");
 import express from "express";
 import cors from "cors";
 import { AppDataSource } from "./src/AppDataSource";
-import {
-  throwValidationError,
-  createNotFoundMessage,
-} from "./src/util/ErrorUtils";
 import { HttpError } from "./src/error/HttpError";
 import { HttpStatus } from "./src/constants/HttpStatus";
-import { GetOneUserService } from "./src/service/user/GetOneUserService";
-import { CreateUserService } from "./src/service/user/CreateUserService";
+import { GetAllMembersService } from "./src/service/member/GetAllMembersService";
 
 export const app = express();
 
@@ -26,8 +21,7 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-const getOneUserService = new GetOneUserService();
-const createUserService = new CreateUserService();
+const getAllMembersService = new GetAllMembersService();
 
 app.listen(Number(process.env.PORT), () => {
   console.log(`🥛 Server listening on port ${process.env.PORT}`);
@@ -55,41 +49,12 @@ app.get("/health/db", (req, res) => {
 
 // 以下、APIエンドポイントたち
 
-// ユーザー情報取得（1件）API
-app.get("/user/:id", async (req, res, next) => {
+// メンバー情報取得（全件）API
+app.get("/members", async (req, res, next) => {
   try {
-    // バリデーション確認
-    const validationErrors = await getOneUserService.validate(req.params);
-    if (validationErrors.length > 0) throwValidationError(validationErrors); // バリデーションエラーをthrow！
-
+    // バリデーション確認は無し（仕様上、渡されるパラメータが無いので）
     // 本処理
-    const userId = parseInt(req.params.id);
-    const result = await getOneUserService.getOneUserById(userId);
-
-    // レスポンスを返す（ユーザーが見つからなかった場合は、404を返す）
-    Object.keys(result).length > 0
-      ? res.status(HttpStatus.OK.code).json(result)
-      : res
-          .status(HttpStatus.NOT_FOUND.code)
-          .json(
-            createNotFoundMessage(
-              `指定したid(id : ${userId})のユーザーが見つかりませんでした`
-            )
-          );
-  } catch (err) {
-    next(err);
-  }
-});
-
-// ユーザー登録API
-app.post("/user", async (req, res, next) => {
-  try {
-    // バリデーション確認
-    const validationErrors = await createUserService.validate(req.body);
-    if (validationErrors.length > 0) throwValidationError(validationErrors); // バリデーションエラーをthrow！
-
-    // 本処理
-    const result = await createUserService.createUser(req.body);
+    const result = await getAllMembersService.getAllMembers();
 
     // レスポンスを返す
     res.status(HttpStatus.OK.code).json(result);
