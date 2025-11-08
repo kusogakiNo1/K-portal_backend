@@ -5,7 +5,9 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   DeleteDateColumn,
+  OneToMany,
 } from "typeorm";
+import { MemberTag } from "./MemberTag";
 
 @Entity("members")
 export class Member {
@@ -50,4 +52,8 @@ export class Member {
     name: "deleted_at",
   })
   deletedAt!: Date;
+
+  // リレーションの設定
+  @OneToMany(() => MemberTag, (memberTag) => memberTag.member)
+  tags!: MemberTag[];
 }

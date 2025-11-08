@@ -1,3 +1,5 @@
+import { IMemberTag } from "./IMemberTag";
+
 export interface IMember {
   id: number;
   name: string;
@@ -7,4 +9,5 @@ export interface IMember {
   description: string;
   color: string;
   accentColor: string;
+  tags: IMemberTag[];
 }
