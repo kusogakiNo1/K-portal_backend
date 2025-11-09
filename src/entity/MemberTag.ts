@@ -15,10 +15,10 @@ export class MemberTag {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column({ type: "int", name: "member_id" })
+  @Column({ type: "int", name: "member_id", nullable: false })
   memberId!: number;
 
-  @Column({ type: "varchar", name: "name", length: 30 })
+  @Column({ type: "varchar", name: "name", length: 30, nullable: false })
   name!: string;
 
   @Column({ type: "boolean", name: "deleted_flag", default: false })
