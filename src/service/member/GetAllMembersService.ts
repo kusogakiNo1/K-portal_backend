@@ -29,7 +29,12 @@ export class GetAllMembersService {
         name: true,
       },
     });
-    if (!memberResults || !memberTagResults) {
+    if (
+      !memberResults ||
+      memberResults.length == 0 ||
+      !memberTagResults ||
+      memberTagResults.length == 0
+    ) {
       // 全権取得で1件も取得できない = DBにデータがないor何かしらの理由でDB接続失敗のため、500エラーを投げる
       throwInternalServerError(
         "DBにメンバーのデータが入っていない、もしくはDB接続に失敗している可能性があります"
