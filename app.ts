@@ -49,7 +49,7 @@ app.get("/health/db", (req, res) => {
 
 // 以下、APIエンドポイントたち
 
-// メンバー情報取得（全件）API
+// メンバー情報全件取得API
 app.get("/members", async (req, res, next) => {
   try {
     // バリデーション確認は無し（仕様上、渡されるパラメータが無いので）
