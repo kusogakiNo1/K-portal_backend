@@ -31,7 +31,7 @@ export const ValidationMsg = {
   },
   limit: {
     notInt: "limitは数字で入力してください",
-    invalidFormat: "limitは1以上1000以下の値にしてください。",
+    invalidFormat: "limitは0以上1000以下の値にしてください。",
   },
   offset: {
     notInt: "offsetは数字で入力してください",

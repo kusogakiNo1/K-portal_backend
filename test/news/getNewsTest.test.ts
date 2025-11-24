@@ -77,6 +77,62 @@ describe("お知らせ情報取得API テスト【👍：正常系 🆖：異常
         );
       });
     });
+    describe("limit", () => {
+      test("👍 有効な値（100）の場合、エラーにならないこと", async () => {
+        const { validationErrors } = await getNewsService.validate({
+          limit: 100,
+        });
+        expect(validationErrors.length).toBe(0);
+      });
+      test("👍 未定義の場合、エラーにならないこと", async () => {
+        const { validationErrors } = await getNewsService.validate({});
+        expect(validationErrors.length).toBe(0);
+      });
+      test("🆖 範囲外の値（1001）の場合、エラーになること", async () => {
+        const { validationErrors } = await getNewsService.validate({
+          limit: 1001,
+        });
+        expect(validationErrors[0].constraints.max).toBe(
+          ValidationMsg.limit.invalidFormat
+        );
+      });
+      test("🆖 型が違う（'a'）の場合、エラーになること", async () => {
+        const { validationErrors } = await getNewsService.validate({
+          limit: "a",
+        });
+        expect(validationErrors[0].constraints.isInt).toBe(
+          ValidationMsg.limit.notInt
+        );
+      });
+    });
+    describe("offset", () => {
+      test("👍 有効な値（100）の場合、エラーにならないこと", async () => {
+        const { validationErrors } = await getNewsService.validate({
+          offset: 100,
+        });
+        expect(validationErrors.length).toBe(0);
+      });
+      test("👍 未定義の場合、エラーにならないこと", async () => {
+        const { validationErrors } = await getNewsService.validate({});
+        expect(validationErrors.length).toBe(0);
+      });
+      test("🆖 範囲外の値（-1）の場合、エラーになること", async () => {
+        const { validationErrors } = await getNewsService.validate({
+          offset: -1,
+        });
+        expect(validationErrors[0].constraints.min).toBe(
+          ValidationMsg.offset.invalidFormat
+        );
+      });
+      test("🆖 型が違う（'a'）の場合、エラーになること", async () => {
+        const { validationErrors } = await getNewsService.validate({
+          offset: "a",
+        });
+        expect(validationErrors[0].constraints.isInt).toBe(
+          ValidationMsg.offset.notInt
+        );
+      });
+    });
   });
 
   describe("Repository テスト", () => {
