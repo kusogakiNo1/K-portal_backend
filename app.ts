@@ -104,6 +104,17 @@ if (AppDataSource.isInitialized) {
 // エラー処理用ミドルウェア
 app.use((err: HttpError, req, res, next) => {
   console.error(err);
+  if (
+    !err.statusCode ||
+    err.statusCode == null ||
+    !(typeof err.statusCode === "number")
+  ) {
+    // stasusコードがない時（ネットワークエラー時など）は500に丸める
+    return res.status(HttpStatus.INTERNAL_SERVER_ERROR.code).json({
+      message: HttpStatus.INTERNAL_SERVER_ERROR.message,
+      detail: err.detail,
+    });
+  }
   return res
     .status(err.statusCode)
     .json({ message: err.message, detail: err.detail });
