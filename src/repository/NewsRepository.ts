@@ -39,6 +39,6 @@ export class NewsRepository {
     }
 
     const result = await qb.getRawOne();
-    return result.totalCount;
+    return Number(result.totalCount);
   }
 }
