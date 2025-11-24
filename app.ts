@@ -76,8 +76,8 @@ app.get("/news", async (req, res, next) => {
       limit,
       offset,
     });
+    // 一つでもバリデーションに引っかかっていた場合は、バリデーションエラーをthrow！
     if (validationResult.validationErrors.length > 0)
-      // バリデーションエラーをthrow！
       throwValidationError(validationResult.validationErrors);
 
     // 本処理
