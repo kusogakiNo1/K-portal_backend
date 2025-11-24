@@ -4,11 +4,13 @@ import "reflect-metadata";
 console.log("🐯 app.ts started");
 
 import express from "express";
+import { Request } from "express";
 import cors from "cors";
 import { AppDataSource } from "./src/AppDataSource";
 import { HttpError } from "./src/error/HttpError";
+import { throwValidationError } from "./src/util/ErrorUtils";
 import { HttpStatus } from "./src/constants/HttpStatus";
-import { GetAllMembersService } from "./src/service/member/GetAllMembersService";
+import { GetAllMembersService, GetNewsService } from "./src/service";
 
 export const app = express();
 
@@ -22,6 +24,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 const getAllMembersService = new GetAllMembersService();
+const getNewsService = new GetNewsService();
 
 app.listen(Number(process.env.PORT), () => {
   console.log(`🥛 Server listening on port ${process.env.PORT}`);
@@ -55,6 +58,34 @@ app.get("/members", async (req, res, next) => {
     // バリデーション確認は無し（仕様上、渡されるパラメータが無いので）
     // 本処理
     const result = await getAllMembersService.getAllMembers();
+
+    // レスポンスを返す
+    res.status(HttpStatus.OK.code).json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// お知らせ情報取得API
+app.get("/news", async (req, res, next) => {
+  try {
+    // バリデーション確認
+    const { category, limit, offset } = req.query;
+    const validationResult = await getNewsService.validate({
+      category,
+      limit,
+      offset,
+    });
+    if (validationResult.validationErrors.length > 0)
+      // バリデーションエラーをthrow！
+      throwValidationError(validationResult.validationErrors);
+
+    // 本処理
+    const result = await getNewsService.getNews(
+      validationResult.params.category,
+      validationResult.params.limit,
+      validationResult.params.offset
+    );
 
     // レスポンスを返す
     res.status(HttpStatus.OK.code).json(result);

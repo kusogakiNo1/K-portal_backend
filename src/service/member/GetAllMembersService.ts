@@ -10,6 +10,8 @@ export class GetAllMembersService {
   private memberTagRepository = AppDataSource.getRepository(MemberTag);
 
   async getAllMembers(): Promise<IMember[] | void> {
+    // Memberテーブル、MemberTagテーブルそれぞれからデータを全件取得
+    // 本来、DBからのデータ取得処理はRepositoryに記載するのが正しいが、全件取得ということもありServiceに記載する。
     const memberResults = await this.memberRepository.find({
       select: {
         id: true,

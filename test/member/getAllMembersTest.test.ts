@@ -220,8 +220,6 @@ describe("メンバー情報全件取得API", () => {
 
       // 操作
       const response = await request(app).get("/members");
-      console.log(response.body.message);
-
       // 期待する結果
       expect(response.status).toStrictEqual(
         HttpStatus.INTERNAL_SERVER_ERROR.code
