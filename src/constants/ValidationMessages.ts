@@ -25,4 +25,16 @@ export const ValidationMsg = {
     notInt: "年齢が数字で入力してください",
     invalidFormat: "年齢が負の数になっています",
   },
+  category: {
+    notInt: "categoryは数字で入力してください",
+    invalidFormat: "不正なカテゴリーです",
+  },
+  limit: {
+    notInt: "limitは数字で入力してください",
+    invalidFormat: "limitは0以上1000以下の値にしてください。",
+  },
+  offset: {
+    notInt: "offsetは数字で入力してください",
+    invalidFormat: "offsetは0以上の値にしてください。",
+  },
 };

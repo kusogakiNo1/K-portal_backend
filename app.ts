@@ -4,11 +4,13 @@ import "reflect-metadata";
 console.log("🐯 app.ts started");
 
 import express from "express";
+import { Request } from "express";
 import cors from "cors";
 import { AppDataSource } from "./src/AppDataSource";
 import { HttpError } from "./src/error/HttpError";
+import { throwValidationError } from "./src/util/ErrorUtils";
 import { HttpStatus } from "./src/constants/HttpStatus";
-import { GetAllMembersService } from "./src/service/member/GetAllMembersService";
+import { GetAllMembersService, GetNewsService } from "./src/service";
 
 export const app = express();
 
@@ -22,6 +24,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 const getAllMembersService = new GetAllMembersService();
+const getNewsService = new GetNewsService();
 
 app.listen(Number(process.env.PORT), () => {
   console.log(`🥛 Server listening on port ${process.env.PORT}`);
@@ -63,6 +66,33 @@ app.get("/members", async (req, res, next) => {
   }
 });
 
+// お知らせ情報取得API
+app.get("/news", async (req, res, next) => {
+  try {
+    // バリデーション確認
+    const { category, limit, offset } = req.query;
+    const validationErrors = await getNewsService.validate({
+      category,
+      limit,
+      offset,
+    });
+    // 一つでもバリデーションに引っかかっていた場合は、バリデーションエラーをthrow！
+    if (validationErrors.length > 0) throwValidationError(validationErrors);
+
+    // 本処理
+    const result = await getNewsService.getNews(
+      category as string | undefined,
+      limit as string | undefined,
+      offset as string | undefined
+    );
+
+    // レスポンスを返す
+    res.status(HttpStatus.OK.code).json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
 // DB切断
 if (AppDataSource.isInitialized) {
   AppDataSource.destroy().catch((err) => {
@@ -73,6 +103,17 @@ if (AppDataSource.isInitialized) {
 // エラー処理用ミドルウェア
 app.use((err: HttpError, req, res, next) => {
   console.error(err);
+  if (
+    !err.statusCode ||
+    err.statusCode == null ||
+    !(typeof err.statusCode === "number")
+  ) {
+    // stasusコードがない時（ネットワークエラー時など）は500に丸める
+    return res.status(HttpStatus.INTERNAL_SERVER_ERROR.code).json({
+      message: HttpStatus.INTERNAL_SERVER_ERROR.message,
+      detail: err.detail,
+    });
+  }
   return res
     .status(err.statusCode)
     .json({ message: err.message, detail: err.detail });

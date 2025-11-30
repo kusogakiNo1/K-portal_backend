@@ -1,0 +1,30 @@
+import { IsInt, Min, Max, IsOptional, IsIn } from "class-validator";
+import { Type } from "class-transformer";
+import { ValidationMsg } from "../../constants/ValidationMessages";
+
+// お知らせ情報取得APIのバリデーションを定義
+
+export class GetNewsValidation {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: ValidationMsg.category.notInt })
+  @IsIn([1, 2, 3, 4], {
+    message: ValidationMsg.category.invalidFormat,
+  })
+  category?: string;
+
+  // 未指定時はデフォルト値を設定するようになっているので、必須チェックやnullチェックは行わない
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: ValidationMsg.limit.notInt })
+  @Min(0, { message: ValidationMsg.limit.invalidFormat })
+  @Max(1000, { message: ValidationMsg.limit.invalidFormat })
+  limit?: string;
+
+  // 未指定時はデフォルト値を設定するようになっているので、必須チェックやnullチェックは行わない
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: ValidationMsg.offset.notInt })
+  @Min(0, { message: ValidationMsg.offset.invalidFormat })
+  offset?: string;
+}
