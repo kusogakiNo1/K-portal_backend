@@ -51,17 +51,17 @@ describe("お知らせ情報取得API テスト【👍：正常系 🆖：異常
   describe("バリデーションテスト（Unit）", () => {
     describe("category", () => {
       test("👍 有効な値（1）の場合、エラーにならないこと", async () => {
-        const { validationErrors } = await getNewsService.validate({
+        const validationErrors = await getNewsService.validate({
           category: 1,
         });
         expect(validationErrors.length).toBe(0);
       });
       test("👍 未定義の場合、エラーにならないこと", async () => {
-        const { validationErrors } = await getNewsService.validate({});
+        const validationErrors = await getNewsService.validate({});
         expect(validationErrors.length).toBe(0);
       });
       test("🆖 範囲外の値（5）の場合、エラーになること", async () => {
-        const { validationErrors } = await getNewsService.validate({
+        const validationErrors = await getNewsService.validate({
           category: 5,
         });
         expect(validationErrors[0].constraints.isIn).toBe(
@@ -69,7 +69,7 @@ describe("お知らせ情報取得API テスト【👍：正常系 🆖：異常
         );
       });
       test("🆖 型が違う（'a'）の場合、エラーになること", async () => {
-        const { validationErrors } = await getNewsService.validate({
+        const validationErrors = await getNewsService.validate({
           category: "a",
         });
         expect(validationErrors[0].constraints.isInt).toBe(
@@ -79,17 +79,17 @@ describe("お知らせ情報取得API テスト【👍：正常系 🆖：異常
     });
     describe("limit", () => {
       test("👍 有効な値（100）の場合、エラーにならないこと", async () => {
-        const { validationErrors } = await getNewsService.validate({
+        const validationErrors = await getNewsService.validate({
           limit: 100,
         });
         expect(validationErrors.length).toBe(0);
       });
       test("👍 未定義の場合、エラーにならないこと", async () => {
-        const { validationErrors } = await getNewsService.validate({});
+        const validationErrors = await getNewsService.validate({});
         expect(validationErrors.length).toBe(0);
       });
       test("🆖 範囲外の値（1001）の場合、エラーになること", async () => {
-        const { validationErrors } = await getNewsService.validate({
+        const validationErrors = await getNewsService.validate({
           limit: 1001,
         });
         expect(validationErrors[0].constraints.max).toBe(
@@ -97,7 +97,7 @@ describe("お知らせ情報取得API テスト【👍：正常系 🆖：異常
         );
       });
       test("🆖 型が違う（'a'）の場合、エラーになること", async () => {
-        const { validationErrors } = await getNewsService.validate({
+        const validationErrors = await getNewsService.validate({
           limit: "a",
         });
         expect(validationErrors[0].constraints.isInt).toBe(
@@ -107,17 +107,17 @@ describe("お知らせ情報取得API テスト【👍：正常系 🆖：異常
     });
     describe("offset", () => {
       test("👍 有効な値（100）の場合、エラーにならないこと", async () => {
-        const { validationErrors } = await getNewsService.validate({
+        const validationErrors = await getNewsService.validate({
           offset: 100,
         });
         expect(validationErrors.length).toBe(0);
       });
       test("👍 未定義の場合、エラーにならないこと", async () => {
-        const { validationErrors } = await getNewsService.validate({});
+        const validationErrors = await getNewsService.validate({});
         expect(validationErrors.length).toBe(0);
       });
       test("🆖 範囲外の値（-1）の場合、エラーになること", async () => {
-        const { validationErrors } = await getNewsService.validate({
+        const validationErrors = await getNewsService.validate({
           offset: -1,
         });
         expect(validationErrors[0].constraints.min).toBe(
@@ -125,7 +125,7 @@ describe("お知らせ情報取得API テスト【👍：正常系 🆖：異常
         );
       });
       test("🆖 型が違う（'a'）の場合、エラーになること", async () => {
-        const { validationErrors } = await getNewsService.validate({
+        const validationErrors = await getNewsService.validate({
           offset: "a",
         });
         expect(validationErrors[0].constraints.isInt).toBe(
@@ -141,17 +141,17 @@ describe("お知らせ情報取得API テスト【👍：正常系 🆖：異常
       expect(news.length).toBe(3);
     });
     test("👍 getNews: categoryで絞り込みができること", async () => {
-      const news = await newsRepository.getNews(1);
+      const news = await newsRepository.getNews("1");
       expect(news.length).toBe(2);
       expect(news.every((n) => n.category === 1)).toBe(true);
     });
     test("👍 getNews: limit, offsetでページネーションができること", async () => {
-      const news = await newsRepository.getNews(undefined, 1, 1);
+      const news = await newsRepository.getNews(undefined, "1", "1");
       expect(news.length).toBe(1);
       expect(news[0].id).toBe(2);
     });
     test("👍 getNews: 該当データなしで空配列が返ること", async () => {
-      const news = await newsRepository.getNews(4);
+      const news = await newsRepository.getNews("4");
       expect(news.length).toBe(0);
     });
     test("👍 countNews: 総件数が取得できること", async () => {
@@ -159,7 +159,7 @@ describe("お知らせ情報取得API テスト【👍：正常系 🆖：異常
       expect(count).toBe(3);
     });
     test("👍 countNews: category指定で絞り込んだ総件数が取得できること", async () => {
-      const count = await newsRepository.countNews(1);
+      const count = await newsRepository.countNews("1");
       expect(count).toBe(2);
     });
   });

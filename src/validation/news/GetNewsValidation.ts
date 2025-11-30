@@ -11,7 +11,7 @@ export class GetNewsValidation {
   @IsIn([1, 2, 3, 4], {
     message: ValidationMsg.category.invalidFormat,
   })
-  category?: number;
+  category?: string;
 
   // 未指定時はデフォルト値を設定するようになっているので、必須チェックやnullチェックは行わない
   @IsOptional()
@@ -19,12 +19,12 @@ export class GetNewsValidation {
   @IsInt({ message: ValidationMsg.limit.notInt })
   @Min(0, { message: ValidationMsg.limit.invalidFormat })
   @Max(1000, { message: ValidationMsg.limit.invalidFormat })
-  limit?: number;
+  limit?: string;
 
   // 未指定時はデフォルト値を設定するようになっているので、必須チェックやnullチェックは行わない
   @IsOptional()
   @Type(() => Number)
   @IsInt({ message: ValidationMsg.offset.notInt })
   @Min(0, { message: ValidationMsg.offset.invalidFormat })
-  offset?: number;
+  offset?: string;
 }

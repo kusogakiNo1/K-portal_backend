@@ -6,9 +6,9 @@ export class NewsRepository {
   private news = AppDataSource.getRepository(News);
 
   async getNews(
-    category?: number,
-    limit?: number,
-    offset?: number
+    category?: string,
+    limit?: string,
+    offset?: string
   ): Promise<INews[]> {
     const qb = this.news
       .createQueryBuilder("news")
@@ -20,22 +20,24 @@ export class NewsRepository {
 
     // categoryが指定されている場合は、categoryで絞り込み
     if (category) {
-      qb.andWhere("category = :category", { category: category });
+      qb.andWhere("category = :category", { category: Number(category) });
     }
     // 日付の降順でソート
     qb.orderBy("date", "DESC");
     // limit（指定がない場合は、デフォルト値を指定）
-    qb.limit(limit ?? 15).offset(offset ?? 0);
+    const limitNum = limit ? Number(limit) : 15;
+    const offsetNum = offset ? Number(offset) : 0;
+    qb.limit(limitNum).offset(offsetNum);
     return qb.getRawMany();
   }
 
-  async countNews(category?: number): Promise<number> {
+  async countNews(category?: string): Promise<number> {
     const qb = this.news
       .createQueryBuilder("news")
       .select("COUNT(*)", "totalCount");
     // categoryが指定されている場合は、categoryで絞り込み
     if (category) {
-      qb.andWhere("category = :category", { category: category });
+      qb.andWhere("category = :category", { category: Number(category) });
     }
 
     const result = await qb.getRawOne();

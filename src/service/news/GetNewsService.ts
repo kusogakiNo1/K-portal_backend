@@ -17,13 +17,11 @@ export class GetNewsService {
   /**
    * パラメータのバリデーションを実行します。
    * @param params バリデーション確認したいパラメータ
-   * @returns validationErrors(バリデーションエラー)、params(バリデーション通過後のパラメータ)
+   * @returns validationErrors(バリデーションエラー)
    */
   async validate(params: object): Promise<any> {
     const validation = plainToInstance(GetNewsValidation, params);
-    const validationErrors = await validate(validation);
-    // バリデーション結果と、バリデーション通過後のパラメータを返す
-    return { validationErrors, params };
+    return await validate(validation);
   }
 
   /**
@@ -34,9 +32,9 @@ export class GetNewsService {
    * @returns お知らせ情報
    */
   async getNews(
-    category?: number,
-    limit?: number,
-    offset?: number
+    category?: string,
+    limit?: string,
+    offset?: string
   ): Promise<NewsResponse> {
     // Newsテーブルからデータを取得（categoryの指定がある場合は、categoryで絞る）
     const newsResults = await this.newsRepository.getNews(

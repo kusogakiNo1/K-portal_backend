@@ -71,20 +71,19 @@ app.get("/news", async (req, res, next) => {
   try {
     // バリデーション確認
     const { category, limit, offset } = req.query;
-    const validationResult = await getNewsService.validate({
+    const validationErrors = await getNewsService.validate({
       category,
       limit,
       offset,
     });
     // 一つでもバリデーションに引っかかっていた場合は、バリデーションエラーをthrow！
-    if (validationResult.validationErrors.length > 0)
-      throwValidationError(validationResult.validationErrors);
+    if (validationErrors.length > 0) throwValidationError(validationErrors);
 
     // 本処理
     const result = await getNewsService.getNews(
-      validationResult.params.category,
-      validationResult.params.limit,
-      validationResult.params.offset
+      category as string | undefined,
+      limit as string | undefined,
+      offset as string | undefined
     );
 
     // レスポンスを返す
