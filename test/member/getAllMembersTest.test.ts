@@ -34,8 +34,17 @@ describe("メンバー情報全件取得API", () => {
       await AppDataSource.initialize();
     }
   });
-  // DB接続を閉じる
+
+  // すべてのテストケースの後に実行される処理
   afterAll(async () => {
+    // テーブルをリセット（データ削除＋主キー採番初期化）
+    // 外部キー制約を一時的に無効化してTRUNCATEを実行
+    await AppDataSource.query("SET FOREIGN_KEY_CHECKS = 0");
+    await AppDataSource.query("TRUNCATE TABLE member_tags");
+    await AppDataSource.query("TRUNCATE TABLE members");
+    await AppDataSource.query("SET FOREIGN_KEY_CHECKS = 1");
+
+    // DB接続を閉じる
     if (AppDataSource.isInitialized) {
       await AppDataSource.destroy();
     }
@@ -43,9 +52,13 @@ describe("メンバー情報全件取得API", () => {
 
   // 各テストの前にDBをクリーンアップ
   beforeEach(async () => {
-    await AppDataSource.getRepository(MemberTag).delete({});
-    await AppDataSource.getRepository(Member).delete({});
+    // 外部キー制約を一時的に無効化してTRUNCATEを実行
+    await AppDataSource.query("SET FOREIGN_KEY_CHECKS = 0");
+    await AppDataSource.query("TRUNCATE TABLE member_tags");
+    await AppDataSource.query("TRUNCATE TABLE members");
+    await AppDataSource.query("SET FOREIGN_KEY_CHECKS = 1");
   });
+
   // テストごとにモックをクリア
   afterEach(() => {
     vi.restoreAllMocks();
