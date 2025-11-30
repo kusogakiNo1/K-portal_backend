@@ -1,14 +1,21 @@
 import { NewsRepository } from "../../repository/NewsRepository";
-import { INews, INewsResponse } from "../../types/INews";
 import { GetNewsValidation } from "../../validation/news/GetNewsValidation";
 import { DateUtils } from "../../util/DateUtils";
 import { plainToInstance } from "class-transformer";
 import { validate } from "class-validator";
 
+interface IformattedNews {
+  id: number;
+  title: string;
+  category: number;
+  date: string; // date型ではなく、YYYY-MM-DD形式の文字列
+  thumbnailPath: string;
+}
+
 interface NewsAPIResponse {
   totalcount: number;
   count: number;
-  news: INewsResponse[];
+  news: IformattedNews[];
 }
 
 export class GetNewsService {
@@ -46,7 +53,7 @@ export class GetNewsService {
     const newsCounts = await this.newsRepository.countNews(category);
 
     // 日付を文字列形式に変換
-    const formattedNews: INewsResponse[] = newsResults.map((news) => ({
+    const formattedNews: IformattedNews[] = newsResults.map((news) => ({
       ...news,
       date: DateUtils.formatToDateString(news.date),
     }));
