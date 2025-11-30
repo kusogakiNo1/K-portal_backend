@@ -11,6 +11,7 @@ import { HttpError } from "./src/error/HttpError";
 import { throwValidationError } from "./src/util/ErrorUtils";
 import { HttpStatus } from "./src/constants/HttpStatus";
 import { GetAllMembersService, GetNewsService } from "./src/service";
+import { GetNewsDetailService } from "./src/service/news/GetNewsDetailService";
 
 export const app = express();
 
@@ -22,9 +23,6 @@ const corsOptions = {
   allowedHeaders: "Content-Type,Authorization", // 許可するリクエストヘッダー
 };
 app.use(cors(corsOptions));
-
-const getAllMembersService = new GetAllMembersService();
-const getNewsService = new GetNewsService();
 
 app.listen(Number(process.env.PORT), () => {
   console.log(`🥛 Server listening on port ${process.env.PORT}`);
@@ -55,6 +53,7 @@ app.get("/health/db", (req, res) => {
 // メンバー情報全件取得API
 app.get("/members", async (req, res, next) => {
   try {
+    const getAllMembersService = new GetAllMembersService();
     // バリデーション確認は無し（仕様上、渡されるパラメータが無いので）
     // 本処理
     const result = await getAllMembersService.getAllMembers();
@@ -69,6 +68,7 @@ app.get("/members", async (req, res, next) => {
 // お知らせ情報取得API
 app.get("/news", async (req, res, next) => {
   try {
+    const getNewsService = new GetNewsService();
     // バリデーション確認
     const { category, limit, offset } = req.query;
     const validationErrors = await getNewsService.validate({
@@ -85,6 +85,26 @@ app.get("/news", async (req, res, next) => {
       limit as string | undefined,
       offset as string | undefined
     );
+
+    // レスポンスを返す
+    res.status(HttpStatus.OK.code).json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// お知らせ詳細情報取得API
+app.get("/news/:id", async (req, res, next) => {
+  try {
+    const getNewsDetailService = new GetNewsDetailService();
+    // バリデーション確認
+    const { id } = req.params;
+    const validationErrors = await getNewsDetailService.validate({ id });
+    // 一つでもバリデーションに引っかかっていた場合は、バリデーションエラーをthrow！
+    if (validationErrors.length > 0) throwValidationError(validationErrors);
+
+    // 本処理
+    const result = await getNewsDetailService.getNewsDetail(id);
 
     // レスポンスを返す
     res.status(HttpStatus.OK.code).json(result);

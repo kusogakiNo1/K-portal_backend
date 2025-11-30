@@ -5,7 +5,7 @@ import { DateUtils } from "../../util/DateUtils";
 import { plainToInstance } from "class-transformer";
 import { validate } from "class-validator";
 
-interface NewsResponse {
+interface NewsAPIResponse {
   totalcount: number;
   count: number;
   news: INewsResponse[];
@@ -35,7 +35,7 @@ export class GetNewsService {
     category?: string,
     limit?: string,
     offset?: string
-  ): Promise<NewsResponse> {
+  ): Promise<NewsAPIResponse> {
     // Newsテーブルからデータを取得（categoryの指定がある場合は、categoryで絞る）
     const newsResults = await this.newsRepository.getNews(
       category,
