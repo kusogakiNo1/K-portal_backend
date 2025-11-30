@@ -16,7 +16,7 @@ export class NewsRepository {
       .addSelect("news.title", "title")
       .addSelect("news.category", "category")
       .addSelect("news.date", "date")
-      .addSelect("news.thumbnail_path", "thumbnail_path");
+      .addSelect("news.thumbnail_path", "thumbnailPath");
 
     // categoryが指定されている場合は、categoryで絞り込み
     if (category) {
