@@ -1,4 +1,12 @@
-import { describe, beforeAll, afterAll, expect, test, vi } from "vitest";
+import {
+  describe,
+  beforeAll,
+  beforeEach,
+  afterAll,
+  expect,
+  test,
+  vi,
+} from "vitest";
 import request from "supertest";
 import { app } from "../../app";
 import { AppDataSource } from "../../src/AppDataSource";
@@ -14,10 +22,19 @@ const newsRepository = new NewsRepository();
 describe("お知らせ情報取得API テスト【👍：正常系 🆖：異常系】", () => {
   beforeAll(async () => {
     if (!AppDataSource.isInitialized) await AppDataSource.initialize();
-    await AppDataSource.getRepository(News).clear();
+  });
+
+  // 各テストの前にDBをクリーンアップして、テスト用データを投入
+  beforeEach(async () => {
+    // 他のテストファイルとの競合を避けるため、少し待機
+    await new Promise((resolve) => setTimeout(resolve, 5));
+
+    // テーブルをリセット（データ削除＋主キー採番初期化）
+    await AppDataSource.query("TRUNCATE TABLE news");
+
+    // テスト用データを投入（IDは自動採番）
     await AppDataSource.getRepository(News).save([
       {
-        id: 1,
         title: "News 1",
         category: 1,
         date: new Date("2025-01-01"),
@@ -25,7 +42,6 @@ describe("お知らせ情報取得API テスト【👍：正常系 🆖：異常
         detail: "Detail 1",
       },
       {
-        id: 2,
         title: "News 2",
         category: 2,
         date: new Date("2025-01-02"),
@@ -33,7 +49,6 @@ describe("お知らせ情報取得API テスト【👍：正常系 🆖：異常
         detail: "Detail 2",
       },
       {
-        id: 3,
         title: "News 3",
         category: 1,
         date: new Date("2025-01-03"),
@@ -44,8 +59,9 @@ describe("お知らせ情報取得API テスト【👍：正常系 🆖：異常
   });
 
   afterAll(async () => {
-    await AppDataSource.getRepository(News).clear();
-    if (AppDataSource.isInitialized) await AppDataSource.destroy();
+    // すべてのテストケースの後に実行される処理
+    // テーブルをリセット（データ削除＋主キー採番初期化）
+    await AppDataSource.query("TRUNCATE TABLE news");
   });
 
   describe("バリデーションテスト（Unit）", () => {
