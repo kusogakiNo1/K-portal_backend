@@ -1,20 +1,21 @@
 import { NewsRepository } from "../../repository/NewsRepository";
-import { INews } from "../../types/INews";
+import { INews, INewsResponse } from "../../types/INews";
 import { GetNewsValidation } from "../../validation/news/GetNewsValidation";
+import { DateUtils } from "../../util/DateUtils";
 import { plainToInstance } from "class-transformer";
 import { validate } from "class-validator";
 
 interface NewsResponse {
   totalcount: number;
   count: number;
-  news: INews[];
+  news: INewsResponse[];
 }
 
 export class GetNewsService {
   private newsRepository = new NewsRepository();
 
   /**
-   * 2つの数値を加算します。
+   * パラメータのバリデーションを実行します。
    * @param params バリデーション確認したいパラメータ
    * @returns validationErrors(バリデーションエラー)、params(バリデーション通過後のパラメータ)
    */
@@ -45,10 +46,17 @@ export class GetNewsService {
     );
     // limitで件数を絞らなかった場合の、総件数を取得
     const newsCounts = await this.newsRepository.countNews(category);
+
+    // 日付を文字列形式に変換
+    const formattedNews: INewsResponse[] = newsResults.map((news) => ({
+      ...news,
+      date: DateUtils.formatToDateString(news.date),
+    }));
+
     return {
       totalcount: Number(newsCounts),
-      count: newsResults.length,
-      news: newsResults,
+      count: formattedNews.length,
+      news: formattedNews,
     };
   }
 }
