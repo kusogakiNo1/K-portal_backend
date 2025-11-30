@@ -1,4 +1,4 @@
-import { IsInt, IsDefined } from "class-validator";
+import { IsInt, IsDefined, IsNotEmpty, Matches } from "class-validator";
 import { Type } from "class-transformer";
 import { ValidationMsg } from "../../constants/ValidationMessages";
 
@@ -6,7 +6,7 @@ import { ValidationMsg } from "../../constants/ValidationMessages";
 
 export class GetNewsDetailValidation {
   @IsDefined({ message: ValidationMsg.id.unspecified })
-  @Type(() => Number)
-  @IsInt({ message: ValidationMsg.id.notInt })
+  @IsNotEmpty({ message: ValidationMsg.id.unspecified })
+  @Matches(/^[1-9]\d*$/, { message: ValidationMsg.id.notInt })
   id?: string;
 }
