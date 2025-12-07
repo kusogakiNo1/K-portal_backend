@@ -46,6 +46,21 @@ services:
     networks:
       - KPortalNetwork
 
+  firebase-emulator:
+    build: ./docker/firebase-emulator
+    container_name: firebase-emulator
+    hostname: localhost
+    environment:
+      - FIREBASE_TOKEN=${FIREBASE_AUTH_TOKEN}
+    ports:
+      - "4000:4000" # Emulator UI
+    volumes:
+      # ローカルのコードやデータをコンテナと同期させる
+      - .:/app
+    privileged: true
+    networks:
+      - KPortalNetwork
+
 networks:
   KPortalNetwork:
     driver: bridge

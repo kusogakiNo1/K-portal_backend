@@ -1,0 +1,11 @@
+{
+  "version": "14.27.0",
+  "database": {
+    "version": "4.11.2",
+    "path": "database_export"
+  },
+  "storage": {
+    "version": "14.27.0",
+    "path": "storage_export"
+  }
+}
