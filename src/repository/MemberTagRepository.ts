@@ -1,6 +1,5 @@
-import { AppDataSource } from "../AppDataSource";
-import { MemberTag } from "../entity/MemberTag";
+import { supabase } from "../supabaseClient";
 
-export class MemberRepository {
-  private memberTagRepository = AppDataSource.getRepository(MemberTag);
+export class MemberTagRepository {
+  // 必要に応じてSupabase SDKを使ったメソッドを実装
 }
