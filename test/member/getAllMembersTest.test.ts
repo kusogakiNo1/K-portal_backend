@@ -1,6 +1,5 @@
 import {
   describe,
-  beforeAll,
   afterAll,
   expect,
   test,
@@ -10,53 +9,34 @@ import {
 } from "vitest";
 import request from "supertest";
 import { app } from "../../app";
-import { AppDataSource } from "../../src/AppDataSource";
 import { HttpStatus } from "../../src/constants/HttpStatus";
-import { Member } from "../../src/entity/Member";
-import { MemberTag } from "../../src/entity/MemberTag";
 import { GetAllMembersService } from "../../src/service/member/GetAllMembersService";
 import { HttpError } from "../../src/error/HttpError";
+import { supabase } from "../../src/supabaseClient";
 
 // MemberエンティティのNOT NULL制約を満たすダミーデータ
 const dummyMemberData = {
-  birthday: new Date("2000-01-01"),
-  imagePath: "/images/test.png",
-  catchCopy: "テストキャッチコピー",
+  name: "テストメンバー",
+  birthday: "2000-01-01",
+  image_path: "/images/test.png",
+  catch_copy: "テストキャッチコピー",
   description: "テスト説明文。",
   color: "#FFFFFF",
-  accentColor: "#000000",
+  accent_color: "#000000",
 };
 
 describe("メンバー情報全件取得API", () => {
-  // DB接続を初期化
-  beforeAll(async () => {
-    if (!AppDataSource.isInitialized) {
-      await AppDataSource.initialize();
-    }
-  });
-
   // すべてのテストケースの後に実行される処理
   afterAll(async () => {
-    // テーブルをリセット（データ削除＋主キー採番初期化）
-    // 外部キー制約を一時的に無効化してTRUNCATEを実行
-    await AppDataSource.query("SET FOREIGN_KEY_CHECKS = 0");
-    await AppDataSource.query("TRUNCATE TABLE member_tags");
-    await AppDataSource.query("TRUNCATE TABLE members");
-    await AppDataSource.query("SET FOREIGN_KEY_CHECKS = 1");
-
-    // DB接続を閉じる
-    if (AppDataSource.isInitialized) {
-      await AppDataSource.destroy();
-    }
+    // テスト用データを削除
+    await supabase.from("member_tags").delete().neq("id", 0);
+    await supabase.from("members").delete().neq("id", 0);
   });
 
   // 各テストの前にDBをクリーンアップ
   beforeEach(async () => {
-    // 外部キー制約を一時的に無効化してTRUNCATEを実行
-    await AppDataSource.query("SET FOREIGN_KEY_CHECKS = 0");
-    await AppDataSource.query("TRUNCATE TABLE member_tags");
-    await AppDataSource.query("TRUNCATE TABLE members");
-    await AppDataSource.query("SET FOREIGN_KEY_CHECKS = 1");
+    await supabase.from("member_tags").delete().neq("id", 0);
+    await supabase.from("members").delete().neq("id", 0);
   });
 
   // テストごとにモックをクリア
@@ -69,30 +49,33 @@ describe("メンバー情報全件取得API", () => {
 
     test("No.1 [正常系] DB にメンバーとタグのデータが存在する場合、正しく結合されたデータが返ってくること", async () => {
       // 前提条件
-      const member1 = await AppDataSource.getRepository(Member).save({
-        ...dummyMemberData,
-        name: "タグ無し",
-      });
-      const member2 = await AppDataSource.getRepository(Member).save({
-        ...dummyMemberData,
-        name: "タグ一つ",
-      });
-      const member3 = await AppDataSource.getRepository(Member).save({
-        ...dummyMemberData,
-        name: "タグ複数",
-      });
-      await AppDataSource.getRepository(MemberTag).save({
-        memberId: member2.id,
-        name: "タグ1",
-      });
-      await AppDataSource.getRepository(MemberTag).save({
-        memberId: member3.id,
-        name: "タグA",
-      });
-      await AppDataSource.getRepository(MemberTag).save({
-        memberId: member3.id,
-        name: "タグB",
-      });
+      const { data: members } = await supabase
+        .from("members")
+        .insert([
+          {
+            ...dummyMemberData,
+            name: "タグ無し",
+          },
+          {
+            ...dummyMemberData,
+            name: "タグ一つ",
+          },
+          {
+            ...dummyMemberData,
+            name: "タグ複数",
+          },
+        ])
+        .select("id");
+
+      if (!members || members.length < 3) {
+        throw new Error("Failed to insert test data");
+      }
+
+      await supabase.from("member_tags").insert([
+        { member_id: members[0].id, name: "タグ1" },
+        { member_id: members[1].id, name: "タグA" },
+        { member_id: members[1].id, name: "タグB" },
+      ]);
 
       // 操作
       const result = await getAllMembersService.getAllMembers();
@@ -102,24 +85,24 @@ describe("メンバー情報全件取得API", () => {
       if (!result) return; // Type guard
 
       expect(result).toHaveLength(3);
-      const resMem1 = result.find((m) => m.id === member1.id);
+      const resMem1 = result.find((m) => m.id === members[0].id);
       expect(resMem1).toBeDefined();
       if (!resMem1) return;
-      expect(resMem1.tags).toHaveLength(0);
+      expect(resMem1.tags).toHaveLength(1);
+      expect(resMem1.tags[0].name).toBe("タグ1");
 
-      const resMem2 = result.find((m) => m.id === member2.id);
+      const resMem2 = result.find((m) => m.id === members[1].id);
       expect(resMem2).toBeDefined();
       if (!resMem2) return;
-      expect(resMem2.tags).toHaveLength(1);
-      expect(resMem2.tags[0].name).toBe("タグ1");
-
-      const resMem3 = result.find((m) => m.id === member3.id);
-      expect(resMem3).toBeDefined();
-      if (!resMem3) return;
-      expect(resMem3.tags).toHaveLength(2);
-      expect(resMem3.tags.map((t) => t.name)).toEqual(
+      expect(resMem2.tags).toHaveLength(2);
+      expect(resMem2.tags.map((t) => t.name)).toEqual(
         expect.arrayContaining(["タグA", "タグB"])
       );
+
+      const resMem3 = result.find((m) => m.id === members[2].id);
+      expect(resMem3).toBeDefined();
+      if (!resMem3) return;
+      expect(resMem3.tags).toHaveLength(0);
     });
 
     test("No.2 [異常系] Member テーブルが空の場合、500 エラーがスローされること", async () => {
@@ -145,7 +128,7 @@ describe("メンバー情報全件取得API", () => {
     test("No.3 [異常系] MemberTag テーブルが空の場合、500 エラーがスローされること", async () => {
       expect.assertions(4);
       // 前提条件
-      await AppDataSource.getRepository(Member).save({
+      await supabase.from("members").insert({
         ...dummyMemberData,
         name: "メンバーだけ",
       });
@@ -186,12 +169,20 @@ describe("メンバー情報全件取得API", () => {
   describe("インテグレーションテスト", () => {
     test("No.1 [正常系] データが存在する場合、200 OK とメンバー情報の JSON 配列が返ってくること", async () => {
       // 前提条件
-      const member = await AppDataSource.getRepository(Member).save({
-        ...dummyMemberData,
-        name: "メンバー",
-      });
-      await AppDataSource.getRepository(MemberTag).save({
-        memberId: member.id,
+      const { data: members } = await supabase
+        .from("members")
+        .insert({
+          ...dummyMemberData,
+          name: "メンバー",
+        })
+        .select("id");
+
+      if (!members || members.length === 0) {
+        throw new Error("Failed to insert test data");
+      }
+
+      await supabase.from("member_tags").insert({
+        member_id: members[0].id,
         name: "タグ",
       });
 
@@ -227,7 +218,7 @@ describe("メンバー情報全件取得API", () => {
     test("No.3 [異常系] DB 接続自体に失敗した場合、500 エラーが返ってくること", async () => {
       // 前提条件
       const mockError = new Error("DB connection error");
-      vi.spyOn(AppDataSource.getRepository(Member), "find").mockRejectedValue(
+      vi.spyOn(GetAllMembersService.prototype, "getAllMembers").mockRejectedValue(
         mockError
       );
 

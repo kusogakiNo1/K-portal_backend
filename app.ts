@@ -2,10 +2,12 @@ import "reflect-metadata";
 import * as dotenv from "dotenv";
 dotenv.config();
 console.log("🐯 app.ts started");
+console.log("   env :", process.env.NODE_ENV);
 
 import express from "express";
 import cors from "cors";
 import { supabase } from "./src/supabaseClient";
+import { testSupabase } from "./test/supabaseTestClient";
 import { HttpError } from "./src/error/HttpError";
 import { throwValidationError } from "./src/util/ErrorUtils";
 import { HttpStatus } from "./src/constants/HttpStatus";
@@ -38,11 +40,11 @@ app.get("/health", (req, res) => {
 // DB接続チェック (Supabase)
 app.get("/health/db", async (req, res) => {
   try {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("members")
       .select("count", { count: "exact", head: true });
     if (error) throw error;
-    res.send("Supabase DB is Healthy!");
+    res.send("DB is Healthy!");
   } catch (err) {
     console.error("DB接続失敗:", err);
     res.status(500).send("DB Connection Failed");

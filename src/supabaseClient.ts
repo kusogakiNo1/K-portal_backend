@@ -10,4 +10,11 @@ if (!supabaseUrl || !supabaseKey) {
   throw new Error("Supabase URL or Key is missing in environment variables.");
 }
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
+// テスト環境の時だけデフォルトスキーマを 'test_schema' にする
+const defaultSchema = process.env.NODE_ENV === 'test' ? 'test_schema' : 'public';
+
+export const supabase = createClient(supabaseUrl, supabaseKey, {
+  db: {
+    schema: defaultSchema,
+  },
+});

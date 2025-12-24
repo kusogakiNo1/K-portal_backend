@@ -1,6 +1,5 @@
 import {
   describe,
-  beforeAll,
   beforeEach,
   afterAll,
   expect,
@@ -9,58 +8,44 @@ import {
 } from "vitest";
 import request from "supertest";
 import { app } from "../../app";
-import { AppDataSource } from "../../src/AppDataSource";
-import { News } from "../../src/entity/News";
 import { GetNewsDetailService } from "../../src/service/news/GetNewsDetailService";
 import { ValidationMsg } from "../../src/constants/ValidationMessages";
 import { HttpStatus } from "../../src/constants/HttpStatus";
 import { NewsRepository } from "../../src/repository/NewsRepository";
+import { supabase } from "../../src/supabaseClient";
 
 const getNewsDetailService = new GetNewsDetailService();
 const newsRepository = new NewsRepository();
 
 describe("お知らせ詳細情報取得API テスト【👍：正常系 🆖：異常系】", () => {
-  beforeAll(async () => {
-    // すべてのテストケースの前に実行される処理
-    // DB接続
-    if (!AppDataSource.isInitialized) {
-      await AppDataSource.initialize().catch((err) => {
-        console.error("DB接続失敗:", err);
-      });
-    }
-  });
-
   // 各テストの前にDBをクリーンアップして、テスト用データを投入
   beforeEach(async () => {
-    // 他のテストファイルとの競合を避けるため、少し待機
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    // テスト用データを削除
+    await supabase.from("news").delete().neq("id", 0);
 
-    // テーブルをリセット（データ削除＋主キー採番初期化）
-    await AppDataSource.query("TRUNCATE TABLE news");
-
-    // テスト用データを投入（IDは自動採番）
-    await AppDataSource.getRepository(News).save([
+    // テスト用データを投入
+    await supabase.from("news").insert([
       {
         title: "ローカル環境準備完了",
         category: 1,
-        date: new Date("2025-11-08"),
-        thumbnailPath: "../images/thumbnail/announcement1.png",
+        date: "2025-11-08",
+        thumbnail_path: "../images/thumbnail/announcement1.png",
         detail:
           "ローカル環境の準備が整いました！さあ、あなたも開発者になって、K-portalを盛り上げていきましょう！",
       },
       {
         title: "クソガキグランプリ開催",
         category: 2,
-        date: new Date("2026-01-01"),
-        thumbnailPath: "../images/thumbnail/event1.png",
+        date: "2026-01-01",
+        thumbnail_path: "../images/thumbnail/event1.png",
         detail:
           "新年明けましておめでとうございます！今年も、何卒よろしくお願いいたします。...さて、早速ですが、クソガキグランプリの開催が決定したので、お知らせします。",
       },
       {
         title: "沼坂さん活動休止",
         category: 3,
-        date: new Date("2026-03-01"),
-        thumbnailPath: "../images/thumbnail/news1.png",
+        date: "2026-03-01",
+        thumbnail_path: "../images/thumbnail/news1.png",
         detail:
           "沼坂さんが、年内で活動休止されるとのことです。今のうちに、遊んでおきましょう！",
       },
@@ -69,8 +54,8 @@ describe("お知らせ詳細情報取得API テスト【👍：正常系 🆖：
 
   afterAll(async () => {
     // すべてのテストケースの後に実行される処理
-    // テーブルをリセット（データ削除＋主キー採番初期化）
-    await AppDataSource.query("TRUNCATE TABLE news");
+    // テスト用データを削除
+    await supabase.from("news").delete().neq("id", 0);
   });
 
   describe("バリデーションテスト", () => {
@@ -129,9 +114,22 @@ describe("お知らせ詳細情報取得API テスト【👍：正常系 🆖：
 
   describe("Repository テスト", () => {
     test("👍 getNewsDetail: 存在するIDで詳細データが取得できること", async () => {
-      const newsDetail = await newsRepository.getNewsDetail("1");
+      // まず最初のニュースのIDを取得
+      const { data: allNews } = await supabase
+        .from("news")
+        .select("id")
+        .limit(1)
+        .order("id", { ascending: true });
+
+      if (!allNews || allNews.length === 0) {
+        throw new Error("Failed to get test data");
+      }
+
+      const newsDetail = await newsRepository.getNewsDetail(
+        String(allNews[0].id)
+      );
       expect(newsDetail).toBeDefined();
-      expect(newsDetail!.id).toBe(1);
+      expect(newsDetail!.id).toBe(allNews[0].id);
       expect(newsDetail!.title).toBe("ローカル環境準備完了");
     });
     test("👍 getNewsDetail: 存在しないIDでundefinedが返ること", async () => {
@@ -139,7 +137,20 @@ describe("お知らせ詳細情報取得API テスト【👍：正常系 🆖：
       expect(newsDetail).toBeUndefined();
     });
     test("👍 getNewsDetail: 取得データに全ての項目が含まれていること", async () => {
-      const newsDetail = await newsRepository.getNewsDetail("1");
+      // まず最初のニュースのIDを取得
+      const { data: allNews } = await supabase
+        .from("news")
+        .select("id")
+        .limit(1)
+        .order("id", { ascending: true });
+
+      if (!allNews || allNews.length === 0) {
+        throw new Error("Failed to get test data");
+      }
+
+      const newsDetail = await newsRepository.getNewsDetail(
+        String(allNews[0].id)
+      );
       expect(newsDetail).toBeDefined();
       expect(newsDetail).toHaveProperty("id");
       expect(newsDetail).toHaveProperty("title");
@@ -152,11 +163,22 @@ describe("お知らせ詳細情報取得API テスト【👍：正常系 🆖：
 
   describe("インテグレーションテスト", () => {
     test("👍 存在するお知らせIDを指定し、200が返ってくることの確認", async () => {
-      const response = await request(app).get("/news/1");
+      // まず最初のニュースのIDを取得
+      const { data: allNews } = await supabase
+        .from("news")
+        .select("id")
+        .limit(1)
+        .order("id", { ascending: true });
+
+      if (!allNews || allNews.length === 0) {
+        throw new Error("Failed to get test data");
+      }
+
+      const response = await request(app).get(`/news/${allNews[0].id}`);
 
       expect(response.status).toStrictEqual(HttpStatus.OK.code);
-      expect(response.body).toEqual({
-        id: 1,
+      expect(response.body).toMatchObject({
+        id: allNews[0].id,
         title: "ローカル環境準備完了",
         category: 1,
         date: "2025-11-08",
@@ -166,13 +188,35 @@ describe("お知らせ詳細情報取得API テスト【👍：正常系 🆖：
       });
     });
     test("👍 レスポンスの日付がYYYY-MM-DD形式で返ってくることの確認", async () => {
-      const response = await request(app).get("/news/1");
+      // まず最初のニュースのIDを取得
+      const { data: allNews } = await supabase
+        .from("news")
+        .select("id")
+        .limit(1)
+        .order("id", { ascending: true });
+
+      if (!allNews || allNews.length === 0) {
+        throw new Error("Failed to get test data");
+      }
+
+      const response = await request(app).get(`/news/${allNews[0].id}`);
 
       expect(response.status).toStrictEqual(HttpStatus.OK.code);
       expect(response.body.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     });
     test("👍 レスポンスに必要な項目が全て含まれていることの確認", async () => {
-      const response = await request(app).get("/news/1");
+      // まず最初のニュースのIDを取得
+      const { data: allNews } = await supabase
+        .from("news")
+        .select("id")
+        .limit(1)
+        .order("id", { ascending: true });
+
+      if (!allNews || allNews.length === 0) {
+        throw new Error("Failed to get test data");
+      }
+
+      const response = await request(app).get(`/news/${allNews[0].id}`);
 
       expect(response.status).toStrictEqual(HttpStatus.OK.code);
       expect(response.body).toHaveProperty("id");
@@ -205,7 +249,18 @@ describe("お知らせ詳細情報取得API テスト【👍：正常系 🆖：
         .spyOn(NewsRepository.prototype, "getNewsDetail")
         .mockRejectedValue(new Error("DB connection error"));
 
-      const response = await request(app).get("/news/1");
+      // まず最初のニュースのIDを取得
+      const { data: allNews } = await supabase
+        .from("news")
+        .select("id")
+        .limit(1)
+        .order("id", { ascending: true });
+
+      if (!allNews || allNews.length === 0) {
+        throw new Error("Failed to get test data");
+      }
+
+      const response = await request(app).get(`/news/${allNews[0].id}`);
       expect(response.status).toBe(HttpStatus.INTERNAL_SERVER_ERROR.code);
       expect(response.body.message).toBe(
         HttpStatus.INTERNAL_SERVER_ERROR.message
