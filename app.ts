@@ -39,7 +39,7 @@ app.get("/health", (req, res) => {
 // DB接続チェック (Supabase)
 app.get("/health/db", async (req, res) => {
   try {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from("members")
       .select("count", { count: "exact", head: true });
     if (error) throw error;
