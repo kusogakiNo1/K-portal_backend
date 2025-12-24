@@ -87,7 +87,7 @@ export class NewsRepository {
 
     if (error) {
       console.error("News詳細取得エラー:", error);
-      throw new Error("お知らせ詳細情報の取得に失敗しました");
+      return undefined;
     }
 
     if (!data) {
