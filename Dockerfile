@@ -13,7 +13,7 @@ RUN npm install
 COPY . .
 
 # 5. ポートの指定（Railwayは環境変数 PORT を使います）
-EXPOSE 8080
+EXPOSE ${PORT:-9500}
 
 # 6. サーバー起動（本番は dev ではなく start ！）
 CMD ["npm", "run", "start"]
