@@ -1,61 +1,59 @@
-import { AppDataSource } from "../../AppDataSource";
-import { Member } from "../../entity/Member";
-import { MemberTag } from "../../entity/MemberTag";
+import { supabase } from "../../supabaseClient";
 import { IMember } from "../../types/IMember";
 import { IMemberTag } from "../../types/IMemberTag";
 import { throwInternalServerError } from "../../util/ErrorUtils";
 
 export class GetAllMembersService {
-  private memberRepository = AppDataSource.getRepository(Member);
-  private memberTagRepository = AppDataSource.getRepository(MemberTag);
-
   async getAllMembers(): Promise<IMember[] | void> {
-    // Memberテーブル、MemberTagテーブルそれぞれからデータを全件取得
+    // Supabaseからメンバーとタグのデータを取得
     // 本来、DBからのデータ取得処理はRepositoryに記載するのが正しいが、全件取得ということもありServiceに記載する。
-    const memberResults = await this.memberRepository.find({
-      select: {
-        id: true,
-        name: true,
-        birthday: true,
-        imagePath: true,
-        catchCopy: true,
-        description: true,
-        color: true,
-        accentColor: true,
-      },
-    });
-    const memberTagResults = await this.memberTagRepository.find({
-      select: {
-        id: true,
-        memberId: true,
-        name: true,
-      },
-    });
-    if (
-      !memberResults ||
-      memberResults.length == 0 ||
-      !memberTagResults ||
-      memberTagResults.length == 0
-    ) {
-      // 全権取得で1件も取得できない = DBにデータがないor何かしらの理由でDB接続失敗のため、500エラーを投げる
+    const { data: members, error: membersError } = await supabase
+      .from("members")
+      .select("*")
+      .eq("deleted_flag", 0);
+
+    const { data: memberTags, error: tagsError } = await supabase
+      .from("member_tags")
+      .select("*")
+      .eq("deleted_flag", 0);
+
+    if (membersError || tagsError) {
+      console.error("DB取得エラー:", membersError || tagsError);
+      throwInternalServerError(
+        "DBからのデータ取得に失敗しました"
+      );
+      return;
+    }
+
+    if (!members || members.length === 0 || !memberTags || memberTags.length === 0) {
       throwInternalServerError(
         "DBにメンバーのデータが入っていない、もしくはDB接続に失敗している可能性があります"
       );
+      return;
     }
+
     // memberTagデータをmemberIdごとにグループ化する
-    const tagsGropuById = new Map<number, IMemberTag[]>();
-    memberTagResults.forEach((tag) => {
-      if (!tagsGropuById.has(tag.memberId)) {
-        tagsGropuById.set(tag.memberId, []);
+    const tagsGroupById = new Map<number, IMemberTag[]>();
+    memberTags.forEach((tag: any) => {
+      const memberId = tag.member_id;
+      if (!tagsGroupById.has(memberId)) {
+        tagsGroupById.set(memberId, []);
       }
-      tagsGropuById.get(tag.memberId)!.push({ id: tag.id, name: tag.name });
+      tagsGroupById.get(memberId)!.push({ id: tag.id, name: tag.name });
     });
 
-    // memberデータとmemberTagデータを結合
-    const completedMemberResults = memberResults.map((member) => {
+    // memberデータとmemberTagデータを結合、スネークケースからキャメルケースへ変換
+    const completedMemberResults: IMember[] = members.map((member: any) => {
       return {
-        ...member,
-        tags: tagsGropuById.get(member.id) || [],
+        id: member.id,
+        name: member.name,
+        birthday: member.birthday,
+        imagePath: member.image_path,
+        catchCopy: member.catch_copy,
+        description: member.description,
+        color: member.color,
+        accentColor: member.accent_color,
+        tags: tagsGroupById.get(member.id) || [],
       };
     });
 

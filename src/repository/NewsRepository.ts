@@ -1,10 +1,7 @@
-import { AppDataSource } from "../AppDataSource";
-import { News } from "../entity/News";
+import { supabase } from "../supabaseClient";
 import { INews, INewsDetails } from "../types/INews";
 
 export class NewsRepository {
-  private news = AppDataSource.getRepository(News);
-
   /**
    * お知らせ情報を取得
    * @param category お知らせのカテゴリー
@@ -17,25 +14,36 @@ export class NewsRepository {
     limit?: string,
     offset?: string
   ): Promise<INews[]> {
-    const qb = this.news
-      .createQueryBuilder("news")
-      .select("news.id", "id")
-      .addSelect("news.title", "title")
-      .addSelect("news.category", "category")
-      .addSelect("news.date", "date")
-      .addSelect("news.thumbnail_path", "thumbnailPath");
+    const limitNum = limit ? Number(limit) : 15;
+    const offsetNum = offset ? Number(offset) : 0;
+
+    let query = supabase
+      .from("news")
+      .select("id, title, category, date, thumbnail_path")
+      .eq("deleted_flag", 0)
+      .order("date", { ascending: false })
+      .range(offsetNum, offsetNum + limitNum - 1);
 
     // categoryが指定されている場合は、categoryで絞り込み
     if (category) {
-      qb.andWhere("category = :category", { category: Number(category) });
+      query = query.eq("category", Number(category));
     }
-    // 日付の降順でソート
-    qb.orderBy("date", "DESC");
-    // limit（指定がない場合は、デフォルト値を指定）
-    const limitNum = limit ? Number(limit) : 15;
-    const offsetNum = offset ? Number(offset) : 0;
-    qb.limit(limitNum).offset(offsetNum);
-    return qb.getRawMany();
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error("News取得エラー:", error);
+      throw new Error("お知らせ情報の取得に失敗しました");
+    }
+
+    // スネークケースからキャメルケースへ変換
+    return (data || []).map((news: any) => ({
+      id: news.id,
+      title: news.title,
+      category: news.category,
+      date: news.date,
+      thumbnailPath: news.thumbnail_path,
+    }));
   }
 
   /**
@@ -44,16 +52,24 @@ export class NewsRepository {
    * @returns お知らせ情報の総件数
    */
   async countNews(category?: string): Promise<number> {
-    const qb = this.news
-      .createQueryBuilder("news")
-      .select("COUNT(*)", "totalCount");
+    let query = supabase
+      .from("news")
+      .select("*", { count: "exact", head: true })
+      .eq("deleted_flag", 0);
+
     // categoryが指定されている場合は、categoryで絞り込み
     if (category) {
-      qb.andWhere("category = :category", { category: Number(category) });
+      query = query.eq("category", Number(category));
     }
 
-    const result = await qb.getRawOne();
-    return Number(result.totalCount);
+    const { count, error } = await query;
+
+    if (error) {
+      console.error("Newsカウントエラー:", error);
+      throw new Error("お知らせ情報の件数取得に失敗しました");
+    }
+
+    return count || 0;
   }
 
   /**
@@ -62,16 +78,30 @@ export class NewsRepository {
    * @returns お知らせ詳細情報
    */
   async getNewsDetail(id: string): Promise<INewsDetails | undefined> {
-    const qb = this.news
-      .createQueryBuilder("news")
-      .select("news.id", "id")
-      .addSelect("news.title", "title")
-      .addSelect("news.category", "category")
-      .addSelect("news.date", "date")
-      .addSelect("news.thumbnail_path", "thumbnailPath")
-      .addSelect("news.detail", "detail")
-      .where("news.id = :id", { id: Number(id) });
+    const { data, error } = await supabase
+      .from("news")
+      .select("id, title, category, date, thumbnail_path, detail")
+      .eq("id", Number(id))
+      .eq("deleted_flag", 0)
+      .single();
 
-    return qb.getRawOne();
+    if (error) {
+      console.error("News詳細取得エラー:", error);
+      return undefined;
+    }
+
+    if (!data) {
+      return undefined;
+    }
+
+    // スネークケースからキャメルケースへ変換
+    return {
+      id: data.id,
+      title: data.title,
+      category: data.category,
+      date: data.date,
+      thumbnailPath: data.thumbnail_path,
+      detail: data.detail,
+    };
   }
 }

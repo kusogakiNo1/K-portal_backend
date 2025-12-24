@@ -1,12 +1,12 @@
+import "reflect-metadata";
 import * as dotenv from "dotenv";
 dotenv.config();
-import "reflect-metadata";
 console.log("🐯 app.ts started");
+console.log("   env :", process.env.NODE_ENV);
 
 import express from "express";
-import { Request } from "express";
 import cors from "cors";
-import { AppDataSource } from "./src/AppDataSource";
+import { supabase } from "./src/supabaseClient";
 import { HttpError } from "./src/error/HttpError";
 import { throwValidationError } from "./src/util/ErrorUtils";
 import { HttpStatus } from "./src/constants/HttpStatus";
@@ -36,16 +36,18 @@ app.get("/health", (req, res) => {
   res.send("Hello Kusogaki!");
 });
 
-// DB接続
-if (!AppDataSource.isInitialized) {
-  AppDataSource.initialize().catch((err) => {
+// DB接続チェック (Supabase)
+app.get("/health/db", async (req, res) => {
+  try {
+    const { error } = await supabase
+      .from("members")
+      .select("count", { count: "exact", head: true });
+    if (error) throw error;
+    res.send("DB is Healthy!");
+  } catch (err) {
     console.error("DB接続失敗:", err);
-  });
-}
-
-// DB接続チェック
-app.get("/health/db", (req, res) => {
-  res.send("DB is Healthy!");
+    res.status(500).send("DB Connection Failed");
+  }
 });
 
 // 以下、APIエンドポイントたち
@@ -112,13 +114,6 @@ app.get("/news/:id", async (req, res, next) => {
     next(err);
   }
 });
-
-// DB切断
-if (AppDataSource.isInitialized) {
-  AppDataSource.destroy().catch((err) => {
-    console.error("DB切断失敗:", err);
-  });
-}
 
 // エラー処理用ミドルウェア
 app.use((err: HttpError, req, res, next) => {
