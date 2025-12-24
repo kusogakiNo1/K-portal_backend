@@ -72,9 +72,9 @@ describe("メンバー情報全件取得API", () => {
       }
 
       await supabase.from("member_tags").insert([
-        { member_id: members[0].id, name: "タグ1" },
         { member_id: members[1].id, name: "タグA" },
-        { member_id: members[1].id, name: "タグB" },
+        { member_id: members[2].id, name: "タグ1" },
+        { member_id: members[2].id, name: "タグ2" },
       ]);
 
       // 操作
@@ -88,21 +88,21 @@ describe("メンバー情報全件取得API", () => {
       const resMem1 = result.find((m) => m.id === members[0].id);
       expect(resMem1).toBeDefined();
       if (!resMem1) return;
-      expect(resMem1.tags).toHaveLength(1);
-      expect(resMem1.tags[0].name).toBe("タグ1");
+      expect(resMem1.tags).toHaveLength(0);
 
       const resMem2 = result.find((m) => m.id === members[1].id);
       expect(resMem2).toBeDefined();
       if (!resMem2) return;
-      expect(resMem2.tags).toHaveLength(2);
-      expect(resMem2.tags.map((t) => t.name)).toEqual(
-        expect.arrayContaining(["タグA", "タグB"])
-      );
+      expect(resMem2.tags).toHaveLength(1);
+      expect(resMem2.tags[0].name).toBe("タグA");
 
       const resMem3 = result.find((m) => m.id === members[2].id);
       expect(resMem3).toBeDefined();
       if (!resMem3) return;
-      expect(resMem3.tags).toHaveLength(0);
+      expect(resMem3.tags).toHaveLength(2);
+      expect(resMem3.tags.map((t) => t.name)).toEqual(
+        expect.arrayContaining(["タグ1", "タグ2"])
+      );
     });
 
     test("No.2 [異常系] Member テーブルが空の場合、500 エラーがスローされること", async () => {
