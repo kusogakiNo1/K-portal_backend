@@ -7,7 +7,6 @@ console.log("   env :", process.env.NODE_ENV);
 import express from "express";
 import cors from "cors";
 import { supabase } from "./src/supabaseClient";
-import { testSupabase } from "./test/supabaseTestClient";
 import { HttpError } from "./src/error/HttpError";
 import { throwValidationError } from "./src/util/ErrorUtils";
 import { HttpStatus } from "./src/constants/HttpStatus";
